@@ -147,6 +147,18 @@ else if(tool==='brush')hint='A soft-edged, expressive paint stroke.';
 else if(tool==='pen')hint='A smooth, solid ink stroke.';
 else if(tool==='fountain')hint='A signature-style angled nib: broad downstrokes and fine cross-strokes.';
 $('toolHint').textContent=hint}
+// Pinch to zoom + two-finger drag to pan. One finger still draws; the moment a
+// second finger lands, the in-progress stroke is cancelled and the gesture takes
+// over. Listeners sit on the shell in the capture phase so the second finger
+// never reaches the drawing handlers underneath.
+const activePointers=new Map();let pinch=null;
+function cancelStrokeForGesture(){if(selection){applySelection()}else if(historyIndex>=0){ctx.putImageData(history[historyIndex],0,0)}markerCtx.clearRect(0,0,W,H);clearOverlay();drawing=false;dragOffset=null}
+function pinchMid(){let pts=[...activePointers.values()];return{x:(pts[0].x+pts[1].x)/2,y:(pts[0].y+pts[1].y)/2}}
+function pinchDist(){let pts=[...activePointers.values()];return Math.hypot(pts[0].x-pts[1].x,pts[0].y-pts[1].y)}
+shell.addEventListener('pointerdown',e=>{activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(activePointers.size>=2){e.preventDefault();e.stopPropagation();if(!pinch){cancelStrokeForGesture();let r=stage.getBoundingClientRect(),mid=pinchMid();pinch={dist:Math.max(12,pinchDist()),zoom:zoom,fx:(mid.x-r.left)/r.width,fy:(mid.y-r.top)/r.height}}}},true);
+shell.addEventListener('pointermove',e=>{if(!activePointers.has(e.pointerId))return;activePointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pinch){e.preventDefault();e.stopPropagation();let mid=pinchMid();setZoom(pinch.zoom*pinchDist()/pinch.dist);let r=stage.getBoundingClientRect();shell.scrollLeft+=(r.left+pinch.fx*r.width)-mid.x;shell.scrollTop+=(r.top+pinch.fy*r.height)-mid.y}},true);
+function endPointer(e){let wasPinching=!!pinch;activePointers.delete(e.pointerId);if(activePointers.size<2)pinch=null;if(wasPinching)e.stopPropagation()}
+shell.addEventListener('pointerup',endPointer,true);shell.addEventListener('pointercancel',endPointer,true);
 renderExtras();if(window.lucide)lucide.createIcons();
 })();
 </script>

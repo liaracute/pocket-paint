@@ -26,7 +26,7 @@
      </div>
     </div>
     <div class="header-actions">
-     <button id="importBtn" class="iconbtn canva-button" aria-label="Add image from gallery" title="Add image"><i data-lucide="image-plus"></i></button> <button id="undoBtn" class="iconbtn canva-button" aria-label="Undo" title="Undo"><i data-lucide="undo-2"></i></button> <button id="redoBtn" class="iconbtn canva-button" aria-label="Redo" title="Redo"><i data-lucide="redo-2"></i></button>
+     <button id="importBtn" class="iconbtn canva-button" aria-label="Add image from gallery" title="Add image"><i data-lucide="image-plus"></i></button> <button id="undoBtn" class="iconbtn canva-button" aria-label="Undo" title="Undo"><i data-lucide="undo-2"></i></button> <button id="redoBtn" class="iconbtn canva-button" aria-label="Redo" title="Redo"><i data-lucide="redo-2"></i></button> <button id="saveBtn" class="iconbtn canva-button" aria-label="Save drawing as PNG" title="Save as PNG"><i data-lucide="download"></i></button>
     </div>
    </header>
    <main>
@@ -124,6 +124,7 @@ function finish(e){if(!drawing)return;drawing=false;if(selection){dragOffset=nul
 hit.addEventListener('pointerup',finish);hit.addEventListener('pointercancel',finish);
 $('undoBtn').onclick=()=>{if(selection)cancelSelection();if(historyIndex>0){historyIndex--;ctx.putImageData(history[historyIndex],0,0);updateHistory()}};
 $('redoBtn').onclick=()=>{if(selection)cancelSelection();if(historyIndex<history.length-1){historyIndex++;ctx.putImageData(history[historyIndex],0,0);updateHistory()}};
+$('saveBtn').onclick=()=>{if(selection)applySelection();let out=document.createElement('canvas');out.width=W;out.height=H;let octx=out.getContext('2d');octx.fillStyle='#ffffff';octx.fillRect(0,0,W,H);octx.drawImage(canvas,0,0);out.toBlob(b=>{if(!b){message('Could not save this drawing.');return}let a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='pocket-paint.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),4000);message('Drawing saved as PNG')},'image/png')};
 $('importBtn').onclick=()=>$('imageInput').click();$('imageInput').onchange=e=>{let file=e.target.files[0];if(!file)return;let url=URL.createObjectURL(file),img=new Image();img.onload=()=>{if(selection)applySelection();let scale=Math.min(W/img.width,H/img.height,1);ctx.drawImage(img,(W-img.width*scale)/2,(H-img.height*scale)/2,img.width*scale,img.height*scale);save();URL.revokeObjectURL(url);message('Image added to canvas')};img.onerror=()=>message('Could not open this image.');img.src=url;e.target.value=''};
 function setColor(v){color=v.toLowerCase();$('colorPicker').value=color;$('hexLabel').textContent=color.toUpperCase();let n=parseInt(color.slice(1),16),r=(n>>16)/255,g=((n>>8)&255)/255,b=(n&255)/255,max=Math.max(r,g,b),min=Math.min(r,g,b),h=0;if(max!==min){let d=max-min;h=max===r?((g-b)/d)%6:max===g?(b-r)/d+2:(r-g)/d+4;h=(h*60+360)%360}$('hueSlider').value=Math.round(h);renderSwatches()}
 $('colorPicker').oninput=e=>setColor(e.target.value);$('hueSlider').oninput=e=>{let h=+e.target.value/60,c=1,x=1-Math.abs(h%2-1),parts=h<1?[c,x,0]:h<2?[x,c,0]:h<3?[0,c,x]:h<4?[0,x,c]:h<5?[x,0,c]:[c,0,x];setColor('#'+parts.map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join(''))};
